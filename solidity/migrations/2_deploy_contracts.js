@@ -1,6 +1,9 @@
 /* global artifacts */
 /* eslint-disable prefer-reflect */
 
+const noowner = "0x0000000000000000000000000000000000000001";
+const noaddr = "0x0000000000000000000000000000000000000000000000000000000000000002";
+
 const Utils = artifacts.require('Utils');
 const Owned = artifacts.require('Owned');
 const Managed = artifacts.require('Managed');
@@ -23,30 +26,39 @@ const BancorConverterUpgrader = artifacts.require('BancorConverterUpgrader');
 const BancorConverterRegistry = artifacts.require('BancorConverterRegistry');
 const CrowdsaleController = artifacts.require('CrowdsaleController');
 
+// sequence https://github.com/trufflesuite/truffle/issues/501
+//
 module.exports = function(deployer, network, accounts) {
-    if (network == "production") {
-        deployer.deploy(Utils);
-        deployer.deploy(Owned);
-        deployer.deploy(Managed);
-        deployer.deploy(TokenHolder);
-        deployer.deploy(ERC20Token, 'DummyToken', 'DUM', 0);
-        deployer.deploy(EtherToken);
-        deployer.deploy(ContractRegistry);
-        deployer.deploy(ContractFeatures);
-        deployer.deploy(Whitelist);
-        deployer.deploy(SmartToken, 'Token1', 'TKN1', 2);
-        deployer.deploy(SmartTokenController, SmartToken.address);
-        deployer.deploy(BancorFormula);
-        deployer.deploy(BancorGasPriceLimit, '22000000000');
-        deployer.deploy(BancorNetwork, ContractRegistry.address);
-        deployer.deploy(BancorConverter, SmartToken.address, ContractRegistry.address, 0, '0x0', 0);
+	if (network == "production") {
+		deployer.then(async() => {
+			await deployer.deploy(ContractRegistry);
+			await deployer.link(ContractRegistry, [SmartToken, BancorNetwork, BancorConverter, BancorConverterUpgrader]);
+			await deployer.deploy(SmartToken, 'Token1', 'TKN1', 2)
+			await deployer.link(SmartToken, [SmartTokenController, BancorConverter, CrowdsaleController]);
+			await deployer.deploy(Utils);
+			await deployer.deploy(Owned);
+			await deployer.deploy(Managed);
+			await deployer.deploy(TokenHolder);
+			await deployer.deploy(ERC20Token, 'DummyToken', 'DUM', 0);
+			await deployer.deploy(EtherToken);
+			await deployer.link(EtherToken, [BancorConverter]);
+			await deployer.deploy(ContractFeatures);
+			await deployer.deploy(Whitelist);
+			await deployer.deploy(SmartTokenController, SmartToken.address);
+			await deployer.deploy(BancorFormula);
+			await deployer.deploy(BancorGasPriceLimit, '22000000000');
+			await deployer.deploy(BancorNetwork, ContractRegistry.address);
+			await deployer.deploy(BancorConverter, SmartToken.address, ContractRegistry.address, 0, EtherToken.address, 25);
 
-        deployer.deploy(BancorConverterFactory);
-        deployer.deploy(BancorConverterUpgrader, ContractRegistry.address);
+			await deployer.deploy(BancorConverterFactory);
+			await deployer.deploy(BancorConverterUpgrader, ContractRegistry.address);
 
-        deployer.deploy(BancorConverterRegistry);
+			await deployer.deploy(BancorConverterRegistry);
 
-        deployer.deploy(CrowdsaleController, SmartToken.address, 4102444800, '0x125', '0x126', 1);
-        deployer.deploy(XTransferRerouter, true);
-    }
+			//await deployer.deploy(CrowdsaleController, SmartToken.address, 4102444800, '0x125', '0x126', 1);
+			await deployer.deploy(CrowdsaleController, SmartToken.address, 114102444800, noowner, noowner, noaddr);
+			await deployer.deploy(XTransferRerouter, true);
+    		});
+	}
 };
+
