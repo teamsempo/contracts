@@ -1,4 +1,4 @@
-﻿
+## DEPRECATED - WE DON'T ACTUALLY USE THIS ##
 # Bancor Protocol Contracts v0.4 (beta)
 
 ## Overview
